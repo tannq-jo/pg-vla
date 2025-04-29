@@ -1,0 +1,28 @@
+{
+  "auto_map": {
+    "AutoProcessor": "processing_spatialvla.SpatialVLAProcessor"
+  },
+  "do_convert_rgb": null,
+  "do_normalize": false,
+  "do_rescale": true,
+  "do_resize": true,
+  "image_mean": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "image_processor_type": "SiglipImageProcessor",
+  "image_seq_length": 256,
+  "image_std": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "processor_class": "SpatialVLAProcessor",
+  "resample": 3,
+  "rescale_factor": 0.00392156862745098,
+  "size": {
+    "height": 224,
+    "width": 224
+  }
+}
