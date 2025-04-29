@@ -17,18 +17,29 @@ class EmbodiedCoT(BaseModel):
     SYS_MSG = (
         "A chat between a curious user and an artificial intelligence assistant. "
         "The assistant gives helpful, detailed, and polite answers to the user's questions. "
-        "USER: {} ASSISTANT:"
+        "USER: {}ASSISTANT:"
     ) 
     
     COT_PROMPTS = [
         "Please think step by step."
     ]
-    MCQ_PROMPTS = [
+    MCQ_PRE_PROMPTS = [
+        (
+            "Your task is to answer the question below. Give step by step reasoning before you answer, "
+            "and when you're ready to answer, please use the format \"Final answer: ..\""
+            "\n\n"
+            "Question:"
+            "\n\n"
+        ),
+        "Please think step by step. Answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\n\n"
+    ]
+    MCQ_POST_PROMPTS = [
         (
             "Please select the correct option from the above choices based on the "
-            "input image and question. The final output should only be one option, such as 'A'."
+            "input image and question. The final output should only be one option, such as \"A\"."
         ),
         "Answer with the option's letter from the given choices directly."
+        "Provide a step-by-step solution to the problem, and conclude with \"the answer is\" followed by the final solution."
     ]
     OCR_PRE_PROMPTS = [
         (
@@ -39,7 +50,7 @@ class EmbodiedCoT(BaseModel):
         ),
         (
             "Read the following question carefully, solve it step by step, and then output "
-            "the final answer in the format of 'Answer: single number or single word or phrase'.\n\n"
+            "the final answer in the format of \"Answer: single number or single word or phrase\".\n\n"
         )
     ]
     OCR_POST_PROMPS = [
@@ -58,19 +69,22 @@ class EmbodiedCoT(BaseModel):
         "Please answer yes or no. Answer the question using a single word or phrase."
     ]
 
-    USE_COT_FOR_OCR = True 
+    USE_COT_FOR_OCR = True
+    USE_COT_FOR_MCQ = False
 
     DEFAULT_COT_PROMPT = \
         "Please think step by step."
+    DEFAULT_MCQ_PRE_PROMPT = \
+        None
+    DEFAULT_MCQ_POST_PROMPT = \
+        "Answer with only the letter of the correct option (e.g., A, B, C, or D). Do not provide any further explanation."
     DEFAULT_OCR_PRE_PROMPT = \
         None
     DEFAULT_OCR_POST_PROMPT = \
         "Answer this question using the text in the image directly without any other context."
     DEFAULT_YORN_PROMPT = \
         "Respond with either 'Yes' or 'No' only, without any further explanation."
-    
-
-    
+        
     def __init__(self, model_path: str):
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
         
@@ -94,6 +108,9 @@ class EmbodiedCoT(BaseModel):
         dataset_type = DATASET_TYPE(dataset, default=None)
 
         self.data_keys |= set(line.keys())
+        print(line)
+        with open("r_ocrbecnh.txt", "a") as file:
+            file.write(line["question"] + "\n\n\n")
         
         if dataset_type == "Y/N":
             return self._build_yorn_prompt(line, dataset)
@@ -114,34 +131,58 @@ class EmbodiedCoT(BaseModel):
             msgs.append(dict(type="image", value=tgt_path))
         
         question = line["question"].strip()
-        question = question.replace(
-            "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: ",
-            ""
-        )
-        prompt = f"\nQuestion: {question}"
         
         if dataset == "MMStar":
+            use_cot = (self.USE_COT_FOR_MCQ and self.DEFAULT_MCQ_PRE_PROMPT is None)
+            hint_str = "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: "
+            question = question.removeprefix(hint_str)
+   
             options = {
                 cand: line[cand].strip()
                 for cand in ASCII_UPPERCASES
                 if cand in line and not pd.isna(line[cand])
             }
+
             options_prompt = "Options:\n"
             for k, v in options.items():
                 options_prompt += f"{k}. {v}\n"
 
+            if self.DEFAULT_MCQ_PRE_PROMPT is not None:
+                prompt = self.DEFAULT_MCQ_PRE_PROMPT
+            else:
+                prompt = "\nQuestion: "
+            
+            prompt += question
+
             if options:
                 prompt += "\n" + options_prompt
-                prompt += f"Note: {self.DEFAULT_MCQ_PROMPT}\n"
+            
+            if use_cot:
+                if not options:
+                    prompt += "\n"
+                prompt += self.DEFAULT_COT_PROMPT
+                punc = " "
+            
+            if options and self.DEFAULT_MCQ_POST_PROMPT is not None:
+                if not use_cot:
+                    if options:
+                        punc = ""
+                    else:
+                        punc = "\n"
+                    
+                prompt += punc + self.DEFAULT_MCQ_POST_PROMPT
             else:
-                prompt += "Note: Carefully read the following question Answer the question directly."
+                prompt += punc + "Thoroughly read the above question. Provide a direct answer."
 
+            prompt += "\n"
+            prompt = self.SYS_MSG.format(prompt)
+
+            print(prompt)
         
         msgs.append(dict(type="text", value=prompt))
         msgs.append(dict(type="text", value="mcq"))        
         
         return msgs
-
 
     def _build_vqa_prompt(self, line, dataset: str) -> list[dict[str, str]]:
         msgs = []
@@ -155,6 +196,7 @@ class EmbodiedCoT(BaseModel):
         question = line["question"].strip()
 
         if dataset == "OCRBench":
+            use_cot = (self.USE_COT_FOR_MCQ and self.DEFAULT_MCQ_PRE_PROMPT is None)
             self.processor.min_pixels = 10 * 10 * 28 * 28
             self.processor.max_pixels = 1280 * 28 * 28
             
@@ -164,32 +206,43 @@ class EmbodiedCoT(BaseModel):
                 if cand in line and not pd.isna(line[cand])
             }
 
-            options_prompt = ""
+            options_prompt = "Options:\n"
             for k, v in options.items():
                 options_prompt += f"{k}. {v}\n"
  
             if self.DEFAULT_OCR_PRE_PROMPT is not None:
                 prompt = self.DEFAULT_OCR_PRE_PROMPT
-                punc = "\n"
             else:
-                prompt = ""
-                punc = " "
+                prompt = "\nQuestion:"
             
             prompt += question
 
-            if options_prompt:
+            if options:
                 prompt += "\n" + options_prompt
             
-            if self.USE_COT_FOR_OCR and self.DEFAULT_OCR_PRE_PROMPT is None:
-                prompt += punc + self.DEFAULT_COT_PROMPT
+            if use_cot:
+                if not options:
+                    prompt += "\n"
+                prompt += self.DEFAULT_COT_PROMPT
                 punc = " "
             
             if self.DEFAULT_OCR_POST_PROMPT is not None:
+                if not use_cot:
+                    if options:
+                        punc = ""
+                    else:
+                        punc = "\n"
+                
                 prompt += punc + self.DEFAULT_OCR_POST_PROMPT
+        
 
+            prompt += "\n"
             prompt = self.SYS_MSG.format(prompt) 
 
+            print(prompt)
+
         msgs.append(dict(type="text", value=prompt))
+        msgs.append(dict(type="text", value="vqa"))
 
         return msgs
     
@@ -202,7 +255,7 @@ class EmbodiedCoT(BaseModel):
         else:
             msgs.append(dict(type="image", value=tgt_path))
 
-        prompt = line["question"].strip() + " " + self.DEFAULT_YORN_PROMPT
+        prompt = line["question"].strip() + " " + self.DEFAULT_YORN_PROMPT + " "
         prompt = self.SYS_MSG.format(prompt)
         msgs.append(dict(type="text", value=prompt))
         
@@ -244,13 +297,13 @@ class EmbodiedCoT(BaseModel):
         #     while tmp[-1] in PUNCTUATIONS:
         #         tmp = tmp[:-1]
             
-        #     if tmp.startwith("A") or tmp.endswith("A"):
+        #     if tmp.startswith("a") or tmp.endswith("a"):
         #         generated_text = "A"
-        #     elif tmp.startwith("B") or tmp.endswith("B"):
+        #     elif tmp.startswith("b") or tmp.endswith("b"):
         #         generated_text = "B"
-        #     elif tmp.startwith("C") or tmp.endswith("C"):
+        #     elif tmp.startswith("c") or tmp.endswith("c"):
         #         generated_text = "C"
-        #     elif tmp.startwith("D") or tmp.endswith("D"):
+        #     elif tmp.startswith("d") or tmp.endswith("d"):
         #         generated_text = "D"
         
         generated_text = "Yes"
