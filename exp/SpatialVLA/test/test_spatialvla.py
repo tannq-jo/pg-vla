@@ -153,6 +153,11 @@ def visualize_attentions(
         end_img_token_idx=256,        
     )
 
+    attention1 = attentions[0][-1][:, :, 256, :]
+    attention2 = attentions[1][-1][:, :, 0, :]
+
+    print(torch.equal(attention1, attention2))
+
     draw_heatmap(args, attn_maps)
     
     return
