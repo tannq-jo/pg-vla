@@ -85,7 +85,7 @@ def prepare_attn_maps_for_visualization(
     start_prompt_token_idx = end_img_token_idx
     end_prompt_token_idx = start_prompt_token_idx + prompt_len
 
-    action_len = output_ids.shape[-1]
+    action_len = output_ids.shape[-1] - 1
     start_action_token_idx = end_prompt_token_idx
     end_action_token_idx = start_action_token_idx + action_len
 
