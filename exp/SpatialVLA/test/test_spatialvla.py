@@ -107,7 +107,7 @@ def prepare_attn_maps_for_visualization(
             
             fused_attn_ = fused_attn[:, start_idx : end_idx]
 
-            print(fused_attn_.shape)
+            print(fused_attn)
 
 
             src_attn_scores = fused_attn_.mean(dim=1) # gather attention scores of source tokens, (Ls,)
