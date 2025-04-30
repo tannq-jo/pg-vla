@@ -548,6 +548,11 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
             for i in attn:
                 print(f"\t- {i.shape}")
 
+        
+        print("=" * 100)
+        print(attentions[0][0][:, :, :, 12:])
+        print("=" * 100)
+
         # if return_attentions:
         #     generated_ids = 
 
@@ -591,6 +596,9 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
         batch_size, num_heads, src_seq_len, tgt_seq_len = attention_outputs[0][0].shape
 
         stacked_attentions = torch.zeros(num_layers, batch_size, num_heads, src_seq_len,)
+
+
+
 
 
         for i in range(num_tokens):
