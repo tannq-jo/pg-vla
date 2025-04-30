@@ -530,7 +530,7 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
             return_dict_in_generate=True,        
         )
 
-        print("Generate:", generated_ids.shape)
+        print("Generate:", model_outputs["sequences"].shape)
         print("Generate:", input_len)
 
         generated_ids = model_outputs["sequences"][:, input_len:]
