@@ -536,7 +536,9 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
         print("Attetntions:", type(attentions))
 
         for attn in attentions:
-            print(f"\t- {attn.shape}")
+            print("-")
+            for i in attn:
+                print(f"\t- {i.shape}")
 
         # if return_attentions:
         #     generated_ids = 
