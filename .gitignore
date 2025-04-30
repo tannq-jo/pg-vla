@@ -174,3 +174,7 @@ cython_debug/
 .pypirc
 
 eval/VLMEvalKit/outputs/
+
+exp/models/spatialvla-4b-mix-224-pt/*.safetensors
+exp/models/spatialvla-4b-mix-224-pt/model-00001-of-00002.safetensors
+exp/models/spatialvla-4b-mix-224-pt/model-00002-of-00002.safetensors
