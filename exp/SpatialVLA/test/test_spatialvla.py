@@ -96,27 +96,27 @@ def prepare_attn_maps_for_visualization(
 
     # fused_attentions = attentions_.mean(dim=1) # layer-fursed, (B, Nh, Ls, Lt)
     fused_attentions = attentions_[:, -1, :, :, :] # last layer, (B, Nh, Ls, Lt)
-    # fused_attentions = fused_attentions[:, :, :, start_prompt_token_idx : end_action_token_idx]
+    fused_attentions = fused_attentions[:, :, :, start_action_token_idx : end_action_token_idx]
     fused_attentions = fused_attentions.mean(dim=1) # head-fused, (B, Ls, Lt)
 
     attn_maps = []
 
     for i, fused_attn in enumerate(fused_attentions): # (Ls, Lt)
-        for j, (start_idx, end_idx) in enumerate(segments):
-            print(f"Batch: {i} - Segment: {j} - Start: {start_idx} - End: {end_idx}")
+        # for j, (start_idx, end_idx) in enumerate(segments):
+        #     print(f"Batch: {i} - Segment: {j} - Start: {start_idx} - End: {end_idx}")
             
-            fused_attn_ = fused_attn[:, start_idx : end_idx]
+        # fused_attn_ = fused_attn[:, start_idx : end_idx]
 
-            print(fused_attn)
+        print(fused_attn)
 
 
-            src_attn_scores = fused_attn_.mean(dim=1) # gather attention scores of source tokens, (Ls,)
-            img_attn_scores = src_attn_scores[start_img_token_idx : end_img_token_idx]
+        src_attn_scores = fused_attn.mean(dim=1) # gather attention scores of source tokens, (Ls,)
+        img_attn_scores = src_attn_scores[start_img_token_idx : end_img_token_idx]
 
-            attn_map = img_attn_scores.reshape(16, 16)
-            attn_map = torch.pow(attn_map, 0.9)
+        attn_map = img_attn_scores.reshape(16, 16)
+        # attn_map = torch.pow(attn_map, 0.9)
 
-            attn_maps.append(attn_map)
+        attn_maps.append(attn_map)
         
     return attn_maps
 
