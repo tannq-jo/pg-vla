@@ -54,7 +54,7 @@ def visualize_attentions(
     #     else:
     #         print(f"\t- {v.shape}")
 
-    model.predict_action_with_attentions()
+    model.predict_action_with_attentions(model_inputs, True)
     
     return
 
