@@ -71,6 +71,7 @@ def draw_heatmap(
 
 def prepare_attn_maps_for_visualization(
     attentions: Tuple[Tuple[torch.Tensor]],
+    input_ids: torch.Tensor,
     start_img_token_index: int = 0,
     end_img_token_index: int = 256,
 ):
@@ -78,8 +79,13 @@ def prepare_attn_maps_for_visualization(
     attentions_ = attentions_.permute(1, 0, 2, 3, 4) # (B, Nl, Nh, Ls, Lt)
     attentions_ = attentions_.detach().float()
 
+    prompt_len = input_ids.shape[-1] - end_img_token_index
+    start_prompt_token_index = end_img_token_index
+    end_prompt_token_index = start_prompt_token_index + prompt_len
+
     # fused_attentions = attentions_.mean(dim=1) # layer-fursed, (B, Nh, Ls, Lt)
     fused_attentions = attentions_[:, -1, :, :, :] # last layer, (B, Nh, Ls, Lt)
+    fused_attentions = fused_attentions[:, :, :, start_prompt_token_index : end_prompt_token_index]
     fused_attentions = fused_attentions.mean(dim=1) # head-fused, (B, Ls, Lt)
 
     attn_maps = []
@@ -122,8 +128,9 @@ def visualize_attentions(
 
     attn_maps = prepare_attn_maps_for_visualization(
         attentions,
+        model_inputs["input_ids"],
         start_img_token_index=0,
-        end_img_token_index=256
+        end_img_token_index=256,        
     )
 
     draw_heatmap(args, attn_maps)
