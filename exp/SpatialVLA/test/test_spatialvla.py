@@ -58,6 +58,10 @@ def visualize_attentions(
 
     print("Input IDs:", model_inputs["input_ids"].shape[1])
     print("Special tokens:", processor.tokenizer.convert_ids_to_tokens([257152, 2, 108]))
+
+
+    a = model.predict_action(model_inputs)
+    print(a.shape)
         
     model.predict_action_with_attentions(model_inputs, True)
     
