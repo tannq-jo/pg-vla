@@ -534,6 +534,11 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
         attentions = model_outputs["attentions"]
 
         print("Attetntions:", type(attentions))
+        print("Len attentions:", len(attentions))
+        temp = []
+        for attn in attentions:
+            temp.append(len(attn))
+        print("Len sub-attentions:", temp)
 
         for attn in attentions:
             print("-")
