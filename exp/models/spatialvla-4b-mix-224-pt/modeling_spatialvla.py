@@ -530,89 +530,10 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
             return_dict_in_generate=True,        
         )
 
-        print("Generate:", model_outputs["sequences"].shape)
-        print("Generate:", input_len)
-
         generated_ids = model_outputs["sequences"][:, input_len:]
         attentions = model_outputs["attentions"]
 
-        print("Attetntions:", type(attentions))
-        print("Len attentions:", len(attentions))
-        temp = []
-        for attn in attentions:
-            temp.append(len(attn))
-        print("Len sub-attentions:", temp)
-
-        for attn in attentions:
-            print("-")
-            for i in attn:
-                print(f"\t- {i.shape}")
-
-        
-        print("=" * 100)
-        print(attentions[0][0][:, :, :, 269 + 12:])
-        print("=" * 100)
-
-        # if return_attentions:
-        #     generated_ids = 
-
-        return generated_ids
-    
-    # batch_size, num_heads = attention_outputs[0][0].shape[:2]
-    #     # batch_size, num_heads = attention_outputs[0][0].shape[:2]
-    #     initial_seq_len = attention_outputs[0][0].shape[-1]
-    #     final_seq_len = initial_seq_len + num_tokens - 1  # -1 because first output is full matrix
-
-    #     # Initialize the combined attention matrix
-    #     combined_attention = torch.zeros((num_layers, batch_size, num_heads, final_seq_len, final_seq_len))
-
-    #     # Copy the first full attention matrix
-    #     combined_attention[:, :, :, :initial_seq_len, :initial_seq_len] = attention_outputs[0][0]
-
-    #     # Add subsequent token attentions
-    #     for i in range(num_tokens):
-    #         for j in range(num_layers):
-    #             if i == 0:
-    #                 combined_attention[j, :, :, :initial_seq_len, :initial_seq_len] = attention_outputs[i][j]
-    #             else:
-    #                 # Current position in the sequence
-
-    #                 current_attention = attention_outputs[i][j][:, :, 0, :]
-    #                 current_pos = current_attention.shape[-1]
-    #                 # print("current_attention.shape: ", current_attention.shape)
-    #                 # print("combined_attention.shape: ", combined_attention[j, :, :, current_pos - 1, :current_pos].shape)
-    #                 # print("current_pos: ", current_pos - 1)
-    #                 combined_attention[j, :, :, current_pos - 1, :current_pos] = current_attention
-    #                 # Place it in the correct position in the combined matrix
-    #                 # combined_attention[:, :, current_pos, : current_pos + 1] = current_attention[:, :, 0, :]
-    #     combined_attention = combined_attention.permute(1, 0, 2, 3, 4)
-    
-    def stack_attention_matrices(
-        self, 
-        attention_outputs: Tuple[Tuple[torch.Tensor]]
-    ) -> torch.Tensor:
-        num_tokens = len(attention_outputs)
-        num_layers = len(attention_outputs[0])
-        batch_size, num_heads, src_seq_len, tgt_seq_len = attention_outputs[0][0].shape
-
-        stacked_attentions = torch.zeros(num_layers, batch_size, num_heads, src_seq_len,)
-
-
-
-
-
-        for i in range(num_tokens):
-            for j in range(num_layers):
-                if i == 0:
-                    stacked_attentions[j, :, :, :]
-
-                else:
-                    current_attention = attention_outputs[i][j]
-
-        stacked_attention = stacked_attention.permute((1, 0, 2, 3, 4)) 
-
-        return stacked_attention        
-
+        return generated_ids, attentions
 
     @classmethod
     def from_pretrained(
