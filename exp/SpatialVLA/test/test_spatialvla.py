@@ -106,6 +106,10 @@ def prepare_attn_maps_for_visualization(
             print(f"Batch: {i} - Segment: {j} - Start: {start_idx} - End: {end_idx}")
             
             fused_attn_ = fused_attn[:, start_idx : end_idx]
+
+            print(fused_attn_.shape)
+
+
             src_attn_scores = fused_attn_.mean(dim=1) # gather attention scores of source tokens, (Ls,)
             img_attn_scores = src_attn_scores[start_img_token_idx : end_img_token_idx]
 
