@@ -63,6 +63,7 @@ def draw_heatmap(
         img_overlayed = cv2.addWeighted(img, 1 - args.alpha, heatmap_color, args.alpha, 0)
 
         img_output = Image.fromarray(img_overlayed)
+        
         save_path = os.path.join(args.save_dir, f"attention_{i}.jpg")
         img_output.save(save_path)
 
@@ -102,7 +103,7 @@ def prepare_attn_maps_for_visualization(
 
     for i, fused_attn in enumerate(fused_attentions): # (Ls, Lt)
         for j, (start_idx, end_idx) in enumerate(segments):
-            print(f"Batch {i} - Segment {j} - Start: {start_idx} - End: {end_idx}")
+            print(f"Batch: {i} - Segment: {j} - Start: {start_idx} - End: {end_idx}")
             
             fused_attn_ = fused_attn[:, start_idx : end_idx]
             src_attn_scores = fused_attn_.mean(dim=1) # gather attention scores of source tokens, (Ls,)
@@ -142,10 +143,10 @@ def visualize_attentions(
 
     attn_maps = prepare_attn_maps_for_visualization(
         attentions,
-        model_inputs["input_ids"],
-        generated_ids,
-        start_img_token_index=0,
-        end_img_token_index=256,        
+        input_ids=model_inputs["input_ids"],
+        output_ids=generated_ids,
+        start_img_token_idx=0,
+        end_img_token_idx=256,        
     )
 
     draw_heatmap(args, attn_maps)
