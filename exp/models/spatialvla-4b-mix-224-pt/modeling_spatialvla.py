@@ -515,13 +515,9 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
     @torch.no_grad()
     def predict_action_with_attentions(
         self, 
-        model_inputs,
-        return_attentions,
-
-    ):
-        print("Input IDs:", model_inputs["input_ids"].shape[1])
-        print("First and last tokens:", model_inputs["input_ids"])
-        
+        model_inputs: Dict[str, torch.Tensor],
+        return_attentions: bool = True,
+    ) -> None:  
         model_inputs = model_inputs.to(self.device, torch.bfloat16)
         input_len = model_inputs["input_ids"].shape[-1]
 
@@ -529,10 +525,9 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
             **model_inputs,
             max_new_tokens=256,
             do_sample=False,
-            output_attentions=return_attentions,
             return_attentions=return_attentions,
-            return_dict=True,
-            # return_dict_in_generate=True,
+            output_attentions=return_attentions,  
+            return_dict_in_generate=True,        
         )
 
         

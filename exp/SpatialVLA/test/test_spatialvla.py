@@ -45,15 +45,20 @@ def visualize_attentions(
     image: Image,
     model_inputs: Dict[str, torch.Tensor]
 ):
-    # for k, v in model_inputs.items():
-    #     print(f"{k}: {type(v)}")
+    print("\n\n")
 
-    #     if isinstance(v, list):
-    #         for i in v:
-    #             print(f"\t- {i.shape}")    
-    #     else:
-    #         print(f"\t- {v.shape}")
+    for k, v in model_inputs.items():
+        print(f"{k}: {type(v)}")
 
+        if isinstance(v, list):
+            for i in v:
+                print(f"\t- {i.shape}")    
+        else:
+            print(f"\t- {v.shape}")
+
+    print("Input IDs:", model_inputs["input_ids"].shape[1])
+    print("Special tokens:", processor.tokenizer.convert_ids_to_tokens([257152, 2, 108]))
+        
     model.predict_action_with_attentions(model_inputs, True)
     
     return
