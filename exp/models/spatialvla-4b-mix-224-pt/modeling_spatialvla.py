@@ -15,7 +15,7 @@
 """PyTorch PaliGemmamodel."""
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import os
 import torch
@@ -119,6 +119,10 @@ class SpatialVLACausalLMOutputWithPast(ModelOutput):
     hidden_states: Optional[Tuple[torch.FloatTensor]] = None
     attentions: Optional[Tuple[torch.FloatTensor]] = None
     image_hidden_states: Optional[torch.FloatTensor] = None
+
+    cross_attentions: Optional[Tuple[torch.FloatTensor]] = None
+    attentions_detached: Optional[List[torch.FloatTensor]] = None
+    cross_attentions_detached: Optional[List[torch.FloatTensor]] = None
 
 class SpatialVLAMultiModalProjector(nn.Module):
     def __init__(self, config: SpatialVLAConfig):
@@ -352,6 +356,7 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         num_logits_to_keep: int = 0,
+        return_attentions: bool = False,
     ) -> Union[Tuple, SpatialVLACausalLMOutputWithPast]:
 
         output_attentions = output_attentions or self.config.output_attentions
@@ -430,6 +435,17 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
             flat_logits = shift_logits.view(-1, self.config.text_config.vocab_size)
             flat_labels = shift_labels.view(-1).to(shift_logits.device)
             loss = loss_fct(flat_logits, flat_labels)
+
+        attentions_detached = None
+        cross_attentions_detached = None
+
+        if return_attentions:
+            if getattr(outputs, "attentions", None) is not None:
+                attentions_detached = [attn.detach() for attn in outputs.attentions]
+            
+            if getattr(outputs, "cross_attentions", None) is not None:
+                cross_attentions_detached = [attn.detach() for attn in outputs.cross_attentions]
+
         if not return_dict:
             output = (logits,) + outputs[1:]
             return (loss,) + output if loss is not None else output
@@ -440,6 +456,9 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
             past_key_values=outputs.past_key_values,
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
+            cross_attentions=getattr(outputs, "cross_attentions", None),
+            attentions_detached=attentions_detached,
+            cross_attentions_detached=cross_attentions_detached,
             image_hidden_states=image_features if pixel_values is not None else None,
         )
 
@@ -492,6 +511,32 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
         input_len = model_inputs["input_ids"].shape[-1]
         generation_outputs = self.generate(**model_inputs, max_new_tokens=256, do_sample=False)
         return generation_outputs[:,input_len:]
+    
+    @torch.no_grad()
+    def predict_action_with_attentions(
+        self, 
+        model_inputs: Dict[torch.Tensor],
+        return_attentions: bool = True,
+
+    ):
+        model_inputs - model_inputs.to(self.device, torch.bfloat16)
+        input_len = model_inputs["input_ids"].shape[-1]
+
+        generated_ids = self.generate(
+            **model_inputs,
+            max_new_tokens=256,
+            do_sample=False,
+            output_attentions=return_attentions,
+            return_dict_in_generate=True,
+        )
+
+        print(generated_ids.keys())
+
+        # generated_ids = generated_ids[:, input_len:]
+
+        # if return_attentions:
+        #     generated_ids = 
+
 
     @classmethod
     def from_pretrained(

@@ -45,14 +45,16 @@ def visualize_attentions(
     image: Image,
     model_inputs: Dict[str, torch.Tensor]
 ):
-    for k, v in model_inputs.items():
-        print(f"{k}: {type(v)}")
+    # for k, v in model_inputs.items():
+    #     print(f"{k}: {type(v)}")
 
-        if isinstance(v, list):
-            for i in v:
-                print(f"\t- {i.shape}")    
-        else:
-            print(f"\t- {v.shape}")
+    #     if isinstance(v, list):
+    #         for i in v:
+    #             print(f"\t- {i.shape}")    
+    #     else:
+    #         print(f"\t- {v.shape}")
+
+    model.predict_action_with_attentions()
     
     return
 
