@@ -530,16 +530,18 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
             return_dict_in_generate=True,        
         )
 
-        
-        print(model_outputs.keys())
+        generated_ids = model_outputs["sequences"][:, input_len:]
+        attentions = model_outputs["attentions"]
 
-        generated_ids = model_outputs["sequences"]
-        print(generated_ids.shape)
+        print("Attetntions:", type(attentions))
 
-        # generated_ids = generated_ids[:, input_len:]
+        for attn in attentions:
+            print(f"\t- {attn.shape}")
 
         # if return_attentions:
         #     generated_ids = 
+
+        return generated_ids
 
 
     @classmethod
