@@ -90,7 +90,9 @@ def prepare_attn_maps_for_visualization(
 
     attn_maps = []
 
-    for fused_attn in fused_attentions: # (Ls, Lt)
+    for i, fused_attn in enumerate(fused_attentions): # (Ls, Lt)
+        print(f"{i}:", fused_attn.shape)
+
         src_attn_scores = fused_attn.mean(dim=1) # gather attention scores of source tokens, (Ls,)
         img_attn_scores = src_attn_scores[start_img_token_index:end_img_token_index]
 
@@ -132,6 +134,8 @@ def visualize_attentions(
         start_img_token_index=0,
         end_img_token_index=256,        
     )
+
+    print(generated_ids.shape)
 
     draw_heatmap(args, attn_maps)
     
