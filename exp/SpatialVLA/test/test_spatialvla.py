@@ -76,7 +76,7 @@ def prepare_attn_maps_for_visualization(
 ):
     attentions_ = torch.stack(attentions[0], dim=0) # (Nl, B, Nh, Ls, Lt)
     attentions_ = attentions_.permute(1, 0, 2, 3, 4) # (B, Nl, Nh, Ls, Lt)
-    attentions_ = attentions_.detach()
+    attentions_ = attentions_.detach().float()
 
     fused_attentions = attentions_.mean(dim=1) # layer-fursed, (B, Nh, Ls, Lt)
     fused_attentions = fused_attentions.mean(dim=1) # head-fused, (B, Ls, Lt)
