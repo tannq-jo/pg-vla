@@ -37,6 +37,10 @@ def load_processor_and_model(args: Namespace):
     return processor, model
 
 
+# def temp():
+
+
+
 @torch.no_grad()
 def visualize_attentions(
     args: Namespace, 
@@ -56,7 +60,7 @@ def visualize_attentions(
         else:
             print(f"\t- {v.shape}")
 
-    print("Input IDs:", model_inputs["input_ids"].shape[1])
+    print("Input IDs:", model_inputs["input_ids"])
     print("Special tokens:", processor.tokenizer.convert_ids_to_tokens([257152, 2, 108]))
 
 
