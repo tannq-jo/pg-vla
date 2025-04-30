@@ -79,7 +79,7 @@ def prepare_attn_maps_for_visualization(
     attentions_ = attentions_.detach().float()
 
     # fused_attentions = attentions_.mean(dim=1) # layer-fursed, (B, Nh, Ls, Lt)
-    fused_attentions = attentions_[-1] # last layer, (B, Nh, Ls, Lt)
+    fused_attentions = attentions_[:, -1, :, :, :] # last layer, (B, Nh, Ls, Lt)
     fused_attentions = fused_attentions.mean(dim=1) # head-fused, (B, Ls, Lt)
 
     attn_maps = []
