@@ -519,20 +519,27 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
         return_attentions,
 
     ):
-        print("Input IDs: ", model_inputs["input_ids"].shape)
+        print("Input IDs:", model_inputs["input_ids"].shape[1])
+        print("First and last tokens:", model_inputs["input_ids"])
         
         model_inputs = model_inputs.to(self.device, torch.bfloat16)
         input_len = model_inputs["input_ids"].shape[-1]
 
-        generated_ids = self.generate(
+        model_outputs = self.generate(
             **model_inputs,
             max_new_tokens=256,
             do_sample=False,
             output_attentions=return_attentions,
-            return_dict_in_generate=True,
+            return_attentions=return_attentions,
+            return_dict=True,
+            # return_dict_in_generate=True,
         )
 
-        print(generated_ids.keys())
+        
+        print(model_outputs.keys())
+
+        generated_ids = model_outputs["sequences"]
+        print(generated_ids.shape)
 
         # generated_ids = generated_ids[:, input_len:]
 
