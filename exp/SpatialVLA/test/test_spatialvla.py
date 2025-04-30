@@ -17,7 +17,7 @@ def parse_args():
     parser.add_argument("--image-path", type=str, default="/home/tannq/working/vinrobotics/vr-vla/pg-vla/exp/SpatialVLA/test/example.png")
     parser.add_argument("--prompt", type=str, default="What action should the robot take to pick the cup?")
     parser.add_argument("--mode", type=str, default="")
-    parser.add_argument("--alpha", type=float, default=0.6)
+    parser.add_argument("--alpha", type=float, default=0.3)
     parser.add_argument("--save-dir", type=str, default="/home/tannq/working/vinrobotics/vr-vla/pg-vla/exp/SpatialVLA/test")
     args = parser.parse_args()
     return args
@@ -45,7 +45,7 @@ def load_processor_and_model(args: Namespace):
 def draw_heatmap(
     args: Namespace,
     heatmaps: List[torch.Tensor],
-):
+) -> None:
     img = cv2.imread(args.image_path)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
@@ -72,35 +72,47 @@ def draw_heatmap(
 def prepare_attn_maps_for_visualization(
     attentions: Tuple[Tuple[torch.Tensor]],
     input_ids: torch.Tensor,
-    start_img_token_index: int = 0,
-    end_img_token_index: int = 256,
+    output_ids: torch.Tensor,
+    start_img_token_idx: int = 0,
+    end_img_token_idx: int = 256,
 ):
     attentions_ = torch.stack(attentions[0], dim=0) # (Nl, B, Nh, Ls, Lt)
     attentions_ = attentions_.permute(1, 0, 2, 3, 4) # (B, Nl, Nh, Ls, Lt)
     attentions_ = attentions_.detach().float()
 
-    prompt_len = input_ids.shape[-1] - end_img_token_index
-    start_prompt_token_index = end_img_token_index
-    end_prompt_token_index = start_prompt_token_index + prompt_len
+    prompt_len = input_ids.shape[-1] - end_img_token_idx
+    start_prompt_token_idx = end_img_token_idx
+    end_prompt_token_idx = start_prompt_token_idx + prompt_len
+
+    action_len = output_ids.shape[-1]
+    start_action_token_idx = end_prompt_token_idx
+    end_action_token_idx = start_action_token_idx + action_len
+
+    segments = [
+        (start_prompt_token_idx, end_prompt_token_idx),
+        (start_action_token_idx, end_action_token_idx)
+    ]
 
     # fused_attentions = attentions_.mean(dim=1) # layer-fursed, (B, Nh, Ls, Lt)
     fused_attentions = attentions_[:, -1, :, :, :] # last layer, (B, Nh, Ls, Lt)
-    fused_attentions = fused_attentions[:, :, :, start_prompt_token_index : end_prompt_token_index]
+    fused_attentions = fused_attentions[:, :, :, start_prompt_token_idx : end_action_token_idx]
     fused_attentions = fused_attentions.mean(dim=1) # head-fused, (B, Ls, Lt)
 
     attn_maps = []
 
     for i, fused_attn in enumerate(fused_attentions): # (Ls, Lt)
-        print(f"{i}:", fused_attn.shape)
+        for j, (start_idx, end_idx) in enumerate(segments):
+            print(f"Batch {i} - Segment {j} - Start: {start_idx} - End: {end_idx}")
+            
+            fused_attn_ = fused_attn[:, start_idx : end_idx]
+            src_attn_scores = fused_attn_.mean(dim=1) # gather attention scores of source tokens, (Ls,)
+            img_attn_scores = src_attn_scores[start_img_token_idx : end_img_token_idx]
 
-        src_attn_scores = fused_attn.mean(dim=1) # gather attention scores of source tokens, (Ls,)
-        img_attn_scores = src_attn_scores[start_img_token_index:end_img_token_index]
+            attn_map = img_attn_scores.reshape(16, 16)
+            attn_map = torch.pow(attn_map, 0.9)
 
-        attn_map = img_attn_scores.reshape(16, 16)
-        attn_map = torch.pow(attn_map, 0.9)
-
-        attn_maps.append(attn_map)
-    
+            attn_maps.append(attn_map)
+        
     return attn_maps
 
 
@@ -131,11 +143,10 @@ def visualize_attentions(
     attn_maps = prepare_attn_maps_for_visualization(
         attentions,
         model_inputs["input_ids"],
+        generated_ids,
         start_img_token_index=0,
         end_img_token_index=256,        
     )
-
-    print(generated_ids.shape)
 
     draw_heatmap(args, attn_maps)
     
