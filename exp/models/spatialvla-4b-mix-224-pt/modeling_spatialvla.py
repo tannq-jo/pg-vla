@@ -519,7 +519,7 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
         return_attentions: bool = True,
 
     ):
-        model_inputs - model_inputs.to(self.device, torch.bfloat16)
+        model_inputs = model_inputs.to(self.device, torch.bfloat16)
         input_len = model_inputs["input_ids"].shape[-1]
 
         generated_ids = self.generate(
