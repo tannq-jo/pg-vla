@@ -550,7 +550,7 @@ class SpatialVLAForConditionalGeneration(SpatialVLAPreTrainedModel, GenerationMi
 
         
         print("=" * 100)
-        print(attentions[0][0][:, :, :, 12:])
+        print(attentions[0][0][:, :, :, 269 + 12:])
         print("=" * 100)
 
         # if return_attentions:
