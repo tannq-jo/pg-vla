@@ -5,7 +5,7 @@ dlimp @ git+https://github.com/SpatialVLA/dlimp_custom.git
 einops==0.8.0
 numpy==1.26.4
 peft==0.14.0
-pillow==11.0.0
+pillow==12.1.1
 scipy==1.14.1
 tensorflow==2.15.0
 tensorflow-datasets==4.9.3
